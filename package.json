@@ -4,11 +4,14 @@
   "private": true,
   "dependencies": {
     "axios": "0.18.0",
+    "body-parser": "^1.18.3",
+    "express": "^4.16.4",
     "query-string-object": "0.2.5",
     "react": "16.6.0",
     "react-dom": "16.6.0",
     "react-scripts": "2.1.1",
-    "react-stripe-elements": "2.0.1"
+    "react-stripe-elements": "2.0.1",
+    "stripe": "^6.17.0"
   },
   "scripts": {
     "start": "react-scripts start",

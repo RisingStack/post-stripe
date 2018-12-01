@@ -5,17 +5,17 @@ We'll get familiar with the Stripe Dashboard and basic Stripe features such as c
 
 ## Stripe
 
-First of all, lets clear what Stripe is. It is basically a payment provider, you integrate it to your application pretty easily and than just let the money rain. Pretty simple right? Well, let the economists tell if it is a good provider or not based on the plans they offer. If you are here, you probably want to earn some knowledge on how the integration goes by. So lets build a simple demo application for that. 
+First of all, what is Stripe? It is basically a payment provider: you setup your account, integrate it into your application pretty easily and let the money rain. Pretty simple right? Well, let your finance people tell if it is a good provider or not based on the plans they offer. If you are here, you probably are probably more interested in the technicalities of the integration. So let's build a simple demo application with Stripe. 
 
 ![Make it rain](https://media.giphy.com/media/3Jhdg8Qro5kMo/giphy.gif)
 
-Before we start coding, lets create a Stripe account (don't worry, no payment or credit card information required for that, only when you want to _activate_ your account, so you can use it outside of test instance). Go stratight to [Stripe Dashboard](https://dashboard.stripe.com/login) and hit that **Sign up** button. Email, name, password... the usual. **BOOM!** You have a dashboard, a test one actually. You can follow orders, payment flow, customers, basically everything here. And not just follow, but also create and manage them. When it comes to creating new a coupon or product for instance, you can just come up here and click a few buttons, or use simple curls described in the [Stripe API Doc](https://stripe.com/docs/api), or integrate a UI and some endpoints for that with [Stripe.js](https://github.com/stripe/stripe-node). These are your options every time you want to communicate with Stripe: dashboard, curls or integration. Another important menu in this dashboard is the **_Developers_** one, where we will add our first _webhooks_ and create our _restricted API keys_. We will get more familiar with that dashboard and the API in the progress of implementing our demo shop below.
+Before we start coding, lets create a Stripe account. Don't worry, no credit card is required for now, you only need to provide a payment method when you want to _activate_ your account need to provide a payment method. So you can use it outside of test instance to play around first. Go stratight to [Stripe Dashboard](https://dashboard.stripe.com/login) and hit that **Sign up** button. Email, name, password... the usual. **BOOM!** You have a dashboard. You can create, manage and keep track of orders, payment flow, customers... so basically everything you want to know regarding your shop here. If you want to create a new coupon or product for instance, you only need to click a few buttons, or enter a simple curl command in your terminal described in the [Stripe API Doc](https://stripe.com/docs/api), and of course you can integrate it into your product so your admins can set them up from your UI integrate and expose it to your customuers using [Stripe.js](https://github.com/stripe/stripe-node). Another important menu on the dashboard is **_Developers_**, where we will add our first _webhook_ and create our _restricted API keys_. We will get more familiar with the dashboard and the API while we implement our demo shop below.
 
-![Dasboard](./images/dashboard.png)
+![Dashboard](./images/dashboard.png)
 
 ## Webshop with Charges
 
-Lets create a React webshop with two products: Banana and Cucumber. What else would you want to buy in a webshop right? We can use our precious [Create React App](https://github.com/facebook/create-react-app) for that to get started. We will need a few more node packages later. I'm going to use [Axios](https://github.com/axios/axios) for HTTP requests and [query-string-object](https://www.npmjs.com/package/query-string-object) to parse objects to query strings for Stripe requests, you can use anything else you are familiar with for those purposes. The main thing will to need is [React Stripe Elements](https://github.com/stripe/react-stripe-elements), this is a React wrapper for Stripe.js and Stripe Elements, it will add secured credit card inputs and will tokenize cards for us with Stripe from the UI side. Keep in mind, you should never send raw card details to your API, Stripe will handle the credit card security for us.
+Lets create a React webshop with two products: Banana and Cucumber. What else would you want to buy in a webshop anyway, right? We can use [Create React App](https://github.com/facebook/create-react-app) to get started. We're going to use [Axios](https://github.com/axios/axios) for HTTP requests and [query-string-object](https://www.npmjs.com/package/query-string-object) to convert objects to query strings for Stripe requests. We will also need [React Stripe Elements](https://github.com/stripe/react-stripe-elements), which is a React wrapper for Stripe.js and Stripe Elements, it adds secure credit card inputs and sends the card's data for tokenization to the Stripe API. *You should never send raw credit card details to your own API, but let Stripe handle the credit card security for you*. You will be able to identify the card provided by the user using the token you got from Stripe.
 
 ```
 npx create-react-app webshop
@@ -25,12 +25,10 @@ npm install --save axios
 npm install --save query-string-object
 ```
 
-After the Preparations was made, we have to load Stripe.js in our application at `public/index.html`. Just add `<script src="https://js.stripe.com/v3/"></script>` to the head.
-Let's start coding - first we have to add a `<StripeProvider/>` from `react-stripe-elements` to our root React App component, this will give us access to the [Stripe object](https://stripe.com/docs/stripe-js/reference#the-stripe-object), in the props we should pass a public access key (`apiKey`) which is found in the dasboards _Developers_ section under the _API keys_ menu with _Publishable key_ name.
+After the preparations are done, we have to include Stripe.js in our application. Just add `<script src="https://js.stripe.com/v3/"></script>` to the head of your `index.html`.
+Now we are ready to start coding. First we have to add a `<StripeProvider/>` from `react-stripe-elements` to our root React App component. This will give us access to the [Stripe object](https://stripe.com/docs/stripe-js/reference#the-stripe-object), in the props we should pass a public access key (`apiKey`) which is found in the dashboard's _Developers_ section under the _API keys_ menu as _Publishable key_.
 
-![DasboardApiKey](./images/dashboard_api-key.png)
-
-For the `StripeProvider` child we can add our `<Shop/>` where our shopping form will take place, but before we start implementing it, always group those forms with an `<Elements>` component from `react-stripe-elements`, this will handle the childs of it as a group on tokenizing.
+![DashboardApiKey](./images/dashboard_api-key.png)
 
 ```javascript
 // App.js
@@ -51,7 +49,7 @@ const App = () => {
 export default App
 ```
 
-Let's create the `Shop.js`. Start with the usual React skeleton, in the return statement we shall create a `<form>`, add two shopping items : `Banana` and `Cucumber`, I'm going to add two buttons for each, increasing and decreasing their quantity in the state under a `cart` property. Below that, a `Reset` button, which will empty our cart. At the bottom a simple submit button, and I'll write down the price the purchase will take by calculating it from the cart quantities and a burnt in `prices` object. You can use the built in `toLocaleString()` function to format those cent prices to USD on the display (Stripe waits for prices in cents when it comes to USD). Creating an input for the card detials is pretty simple: just add a `<CardElment/>` from `react-stripe-elements`, thats it. I'll also add some low effort inline css to make this shop easier to look at.
+The `<Shop/>` is the implementation of our shop form as you can see from `import Shop from './Shop'`. We'll go into it's details later. As you can see the `<Shop/>` is warppend in `<Elements>` imported from `react-stripe-elements` so that you can use `injectStripe` in your components. To shed some light on this, let's take a look at our implementation in `Shop.js`. 
 
 ```javascript
 // Shop.js
@@ -139,7 +137,11 @@ Shop.propTypes = {
 }
 ```
 
-After that, we have to use `injectStripe` [Higher-Order-Component](https://reactjs.org/docs/higher-order-components.html) inorder to provide stripe as a prop for our `<Shop/>` react component, so we can call Stripes `createToken()` function at the submit action to tokenize our card before making any charges to it.
+If you take a look at it, the `Shop` is a simple React form, with to purchasable elements: `Banana` and `Cucumber`, with a qunatity increase and decrease button for each. Clicking the buttons will change their respective amount in `this.state.cart`. There is a `submit` button below, and the current total price of the cart is printed at the very bottom of the form. Price will expect the prices in cents, so we store them as cents, but of course we want to present them to the user in dollars. We prefer them to be shown to the second decimal place, eg. $2.50 instead of $2.5. To achieve this, we can use the built in `toLocaleString()` function to format the prices. 
+
+Now comes the stripe specific part: we need to add a form element so users can enter their cart details. To achieve this, we only need to add `<CardElment/>` from `react-stripe-elements` and that's it. I've also added a bit of low effort inline css to make this shop at least somewhat pleasing to the eye.
+
+We also need to use `injectStripe` [Higher-Order-Component](https://reactjs.org/docs/higher-order-components.html) in order to pass the Stripe object as a prop to the `<Shop/>` component, so we can call Stripe's `createToken()` function in `handleSubmit` to tokenize the user's so it can be charged.
 
 ```javascript
 // Shop.js
@@ -147,11 +149,11 @@ import { injectStripe } from 'react-stripe-elements'
 export default injectStripe(Shop)
 ```
 
-For now lets just make simple charges from the UI to Stripe direcly once we received our token for the card, we can do that by a POST request to `https://api.stripe.com/v1/charges` with giving a payment `source` (this is the token id), a charge `amount` (of the charge) and a `currency` to use. In the header we shall pass an API key for authorization, lets create a restriced one for that in the dashboard under the _Developers_ menu (you should not use your swiss army Secret key at client side). Allow to read and write charges with that key.
+Once we recieve the tokenized card from Stripe, we are ready to charge it. For now lets just keep it simple and charge the card by sending a POST request to `https://api.stripe.com/v1/charges` with specifying the payment `source` (this is the token id), the charge `amount` (of the charge) and the `currency` as described in the [Stripe API](https://stripe.com/docs/api/charges/create). We need to send the API key in the header for authorization. We can create a restricted API key on the dashboard in the _Developers_ menu. Set the permission for charges to "Read and write" as shown in the screenshot below. *N.B., you should never use your swiss army Secret key on the client*.
 
 ![DasboardRestricedApiKey](./images/dashboard_api-key_restricted.png)
 
-We have everything prepared for the submit. Call the `createToken()` async function from `stripe` prop (this will automatically find our card details from the built in `CardElment` from `react-stripe-elements`). After we receive our token, calculate the price from the cart and our prices object, and send our query to `https://api.stripe.com/v1/charges` as described in the [Stripe API](https://stripe.com/docs/api/charges/create).
+Let's take a look at it in action.
 
 ```javascript
 // Shop.js
@@ -194,27 +196,19 @@ class Shop extends Component {
 }
 ```
 
-For testing purposes you can use these international [cards](https://stripe.com/docs/testing#international-cards).
+For testing purposes you can use these international [cards](https://stripe.com/docs/testing#international-cards) provided by Stripe.
 
-![ShopCharges](./images/shop_charges.png)
+Looks good, we can already create tokens from cards and charge them, but how shoud we know who bought what and where should we send the package? Thats where products and orders come in.
 
-Looks good, we can already create tokens from cards and charge them, but how shoud we know who bought what and where should we send the package? Thats where products and orders comes in.
+## Placing an order
 
-## Ordering
-
-This charging method is a good start, but we are going to dump that now and go one step further to orders. We will need an API which handles those orders and accepts webhooks from stripe to process them once they got payed. Lets create an [Express](https://expressjs.com/) API. We will need a couple of other node packages to get started (listed below). Create a new root folder and install those packages.
+The simple charging method is a good start, but we will need to take it a step fruther to create orders. To do so, we We have to set up a server and expose an API which handles those orders and accepts webhooks from stripe to process them once they got payed. We will use [express](https://expressjs.com/) to handle the routes of our API. You can find a list below of a couple of other node packages to get started. Let's create a new root folder and get started.
 
 ```
-npm install --save express
-npm install --save stripe
-npm install --save body-parser
-npm install --save-dev cors
-npm install --save-dev helmet
-npm install --save-dev nodemon
+npm install express stripe body-parser cors helmet 
 ```
 
-The skeleton is a simple express [_Hello World_](https://expressjs.com/en/starter/hello-world.html) with [Cors](https://www.npmjs.com/package/cors) and [Helmet](https://www.npmjs.com/package/helmet), so we can communicate with it from our webshop React app. After creating your `index.js`, you can run the Express API with hot-load by `./node_modules/.bin/nodemon` command thanks to [nodemon](https://nodemon.io/), or just add a script for it in the package.json.
-
+The skeleton is a simple express [_Hello World_](https://expressjs.com/en/starter/hello-world.html) using [CORS](https://www.npmjs.com/package/cors) so that the browser won't panic when we try to reach our PI server that resides and [Helmet](https://www.npmjs.com/package/helmet) to set a bunch of security headers automatically for us.
 
 ```javascript
 // index.js
@@ -237,11 +231,11 @@ app.get('/api/', (req, res) => res.send({ version: '1.0' }))
 app.listen(port, () => console.log(`Example app listening on port ${port}!`))
 ```
 
-In order to access Stripe, require Stripe.js with your _Secret Key_ as a parameter (found at _dashboard->Developers->Api keys_). Now you can call a lot of built in functions from Stripe.js, such as `stripe.orders.create()`, which we gonna do just here with an order from the request body.
+In order to access Stripe, require Stripe.js and call it straight away with your _Secret Key_ (you can find it in _dashboard->Developers->Api keys_). We will use `stripe.orders.create()` passing the data we receive in when the client calls our server to place an order.
 
-Those orders will not be paid automatically. We have two ways to pay an order: with a Source such as a **Card Token ID** or with a **[Customer](https://stripe.com/docs/api/customers/create)**. A Customer object basically only needs a Source which can be the **Card Token ID**, but when you create them it would make sense to add shipping data for it also. You should consider creating Customers from Card Tokens and Shipping data when your application already have a registration function in it, so you can also record your returning customer at Stripe, and save their Customer ID to their application account. This way you can attach permanent or seasonal discount to those Customers, allow them to shop any time with a single click and [list their orders](https://stripe.com/docs/api/orders/list) on a UI for instance based on their customer id.
+The orders will not be paid automatically. To charge the customer we can either use a Source directly such as a **Card Token ID** or we can create a **[Stripe Customer](https://stripe.com/docs/api/customers/create)**. The added benefit of creating a customer is that we can track multiple charges, or create recurring charges for them and also have Stripe store shipping data for us and other necessary information to fulfill the order. You probably want to create Customers from Card Tokens and shipping data even when your application already handles users. This way you can attach permanent or seasonal discount to those Customers, allow them to shop any time with a single click and [list their orders](https://stripe.com/docs/api/orders/list) on your UI.
 
-Lets pay our order by passing the Order ID and a Card Token ID as a Source to the `stripe.orders.pay()` call after the order was succesfully created. You could bind this pay process to another express endpoint also, so if the payment fails, the Client can call it later to try the payment again on the order that was already made. But this is just a demo so we should not over complicate our shop with functions like post-payment, order listing, ect.
+Fow now let's keep it simple anyway and use the Card Token as Source calling `stripe.oders.pay()` once the order is successfully created. In a real world scenario, you probably want to separate the order creation and payment exposing them on different endpoints, so if the payment fails the Client can call try again later without having to recreate the order. However, we still have a lot to cover, so let's not overcomplicate things. 
 
 ```javascript
 // index.js
@@ -257,14 +251,13 @@ app.post('/api/shop/order', async (req, res) => {
   } catch (err) {
     // Handle stripe errors here: No such coupon, sku, ect
     console.log(`Order error: ${err}`)
-    return res.sendStatus(500)
+    return res.sendStatus(404)
   }
   return res.sendStatus(200)
 })
 ```
 
-Looks good, but we are going to need to get those records from the customer at the UI.
-For that lets add the structure Stripe requires to create an Order to the state of `<Shop/>` with handlers. You can find out how an order post should look like [here](https://stripe.com/docs/api/orders/create). Add an `address` object with `line1, city, state, country, postal_code` keys, a `name`, an `email` and a `coupon` field, to get our customers ready for coupon hunting.
+Now we're able to handle oreders on the backend, but we also need to implement this on the UI. Frst let's implement the state of the `<Shop/>` as an object the Stripe API expects. You can find out how an order request should look like [here](https://stripe.com/docs/api/orders/create). We'll need an `address` object with `line1, city, state, country, postal_code` fields, a `name`, an `email` and a `coupon` field, to get our customers ready for coupon hunting.
 
 ```javascript
 // Shop.js
@@ -310,7 +303,7 @@ class Shop extends Component {
 }
 ```
 
-Now the input fields comes in. Also we should disable the submit button when these fields are empty (except the coupon field). Nothing unusual.
+Now we are ready to create the input fields. We should of course disable the submit button when the input fiealds are empty. Just the usual deal.
 
 ```javascript
 // Shop.js
@@ -336,21 +329,22 @@ render () {
 // ...
 ```
 
-To create orders we have to add the items to it. These purchesable items in the order needs to be identified as an [SKU](https://en.wikipedia.org/wiki/Stock_keeping_unit), which can be created at the dasboard also. Firstly we have to create the Products (_Banana_ and _Cucumber_ at _dashboard->Orders->Products_) and than add the SKU to them (click on the created product and _Add SKU_ in the _Inventory_ group). An SKU specifies the products with properties - what size, color, quantity and in which prices we got those -, so a product can have multiple SKUs to it.
+We also have to define purcahsable items. These items in the will be identified by an [SKU](https://en.wikipedia.org/wiki/Stock_keeping_unit) by Stripe, which can be created on the dasboard as well. First we have to create the Products (_Banana_ and _Cucumber_ on _dashboard->Orders->Products_) and then assign an SKU to them (click on the created product and _Add SKU_ in the _Inventory_ group). An SKU specifies the products including its properties - size, color, quantity and prices -, so a product can have multiple SKUs to it.
 
 ![DasboardProduct](./images/dashboard_banana.png)
 ![DasboardSKU](./images/dashboard_sku.png)
 
-After we made our products and the SKUs for it, add them to the webshop so we can parse up the order.
+After we created our products and assigned SKUs to them, add them to the webshop so we can parse up the order.
 
 ```javascript
+// Shop.js
 const skus = {
   banana: 1,
   cucumber: 2
 }
 ```
 
-We are ready to send the orders to our express API on submit after parsing up the order object. We do not have to calculate the price of the order from now on, Stripe will calculate it with the given SKUs, quantitites and coupons.
+We are ready to send orders to our express API on submit. We do not have to calculate the total price of orders from now on, Stripe can sum it up for as, based on the SKUs, quantitites and coupons.
 
 ```javascript
 // Shop.js
@@ -398,23 +392,25 @@ handleSubmit(evt) {
 }
 ```
 
-Lets create a coupon for testing purposes. This can be achieved at the dashboard also. Find it at the _Billing_ menu under the _Coupons_ tab. There are multiple types of coupons based on duration, keep in mind only _Once_ type can be used with orders, others can be attached for Stripe Customers. You can also specify a lot of paramters on creating a coupon, such as how many times a coupon can be used, is it an amount or a percentage off and when will the coupon expire. Now we only need a once duration coupon with some amount off on it.
+Let's create a coupon for testing purposes. This can be done on the dashboard as well. You can find it under the  _Billing_ menu on the _Coupons_ tab. There are multiple types of coupons based on their duration, but only couponse with the type _Once_ can be used for orders, others can be attached to Stripe Customers. You can also specify a lot of paramters you create a coupon, such as how many times it can be used, is it amount base or a percentage based and when will the coupon expire. Now we need a coupon that can only be used once and provides a reduction on the price by a ceratin percentage.
 
 ![DasboardCoupon](./images/dashboard_coupon.png)
 
-Everthing works fine, we can already create orders and pay them. Lets go on to webhooks.
+Great! Now we have our products, we can create orders and we can also ask Stripe to charge the customer's card for us. But we are still not ready to ship the products as we how no idea at the moment if the charge was successful. To get that information, we need to setup webhooks, so Stripe can let us know when the money is on its way.
 
 ![ShopOrders](./images/shop_orders.png)
 
 ## Webhooks
 
-Lets setup our first Stripe webhook, so when an order gets payed, the Stripe API will send our Express API an HTTP request with that order in it to process. For that we have to expose our local Express server for Stripe. You can use [Ngrok](https://ngrok.com/download) for that. Just download it and run with `./ngrok http 3001` command to get an ngrok url forwarding every request to our `localhost:3001`.
+As we discussed earlier, we are not assigning cards but Sources to Customers. The reason behind that is Stripe is capable of using [several payment methods](https://stripe.com/docs/sources), some of which may take days to be verified. So we need to setup an endpoint Stripe can call when an event — such as successful payment — has happened. Webhooks are also useful when an event is not initated by us, calling the API straightway, but comes straight from Stripe. Say you have a subscription service, and you don't want to charge the customer every month. Then you can setup a webhook and you will get notified when the recurring payment was successful or if it failed. 
 
-We can set up our webhook at the dashboard, select _Developers_ menu and _Webhooks_ page, click on _Add endpoint_, insert your ngrok url with a desired endpoint, let say we will create an endpoint called `/api/shop/order/process`, at the _Filter event_ select _Select types to send_ and search for _order.payment_succeeded_.
+In our case we only want to be notified when an order gets payed. When it happens, the Stripe can notify us by calling an endpoint on our API with an HTTP request sending the payment data in the request body. At the moment, we don't have a static IP, but we need a way to expose our local API to the public internet. We can use [Ngrok](https://ngrok.com/download) for that. Just download it and run with `./ngrok http 3001` command to get an ngrok url pointing to our `localhost:3001`.
+
+We we also have to set up our webhook on the dashboard. Go to _Developers_ -> _Webhooks_, click on _Add endpoint_ and type in your ngrok url followed by the endpoint to be called eg. `http://92832de0.ngrok.io/api/shop/order/process`. Then under _Filter event_ select _Select types to send_ and search for _order.payment_succeeded_.
 
 ![DasboardWebhook](./images/dashboard_webhook.png)
 
-Webhooks going to send us the exact event which triggered the webhook, parsing this event into a JSON structure is possible with the `stripe.webhooks.constructEvent()` function, but only with a raw request body. We need to add those with the `bodyParser` package if the requested endpoint matches with our order processing one. Also this `constructEvent` will need a signature that can be taken from the request header, and a webhook secret, found at the dashboards webhooks list after the webhook was created.
+The data sent in the request body is encrypted and can only be decrepted using a signature sent in the header and the webhook secret that can be found on the webhooks dashboard. This also means we cannot simply use `bodyParser` to parse the body, so we need to add an exception to `bodyParser` so it will be bypassed when the url starts with `/api/shop/order/process`. We need to use the `stripe.webhooks.constructEvent()` function instead, provided by the Stripe SDK to decrypt the message for us.
 
 ```javascript
 // index.js
@@ -445,4 +441,4 @@ app.post('/api/shop/order/process', async (req, res) => {
 })
 ```
 
-Done. After an order was successfully payed, we can parse send it to other APIs like Salesforce or Stamps to pack things up and get ready to send out.
+After an order was successfully payed, we can parse send it to other APIs like Salesforce or Stamps to pack things up and get ready to send out.

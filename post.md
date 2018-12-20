@@ -3,6 +3,8 @@
 In this article, we’ll create a simple webshop using Stripe, React and Express.
 We'll get familiar with the Stripe Dashboard and basic Stripe features such as charges, customers, orders, coupons and so on. Also we will understand the usage of webhooks and restricted API keys.
 
+The example app's frontend can be found at https://github.com/RisingStack/post-stripe its backend at https://github.com/RisingStack/post-stripe-api
+
 ## Stripe
 
 First of all, what is Stripe? It is basically a payment provider: you setup your account, integrate it into your application pretty easily and let the money rain. Pretty simple right? Well, let your finance people tell if it is a good provider or not based on the plans they offer. If you are here, you probably are probably more interested in the technicalities of the integration. So let's build a simple demo application with Stripe. 
